@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include "utilities.h"
+#include "gltf_loader.h"
 
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -10,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <filesystem>
 
 using namespace std;
 using json = nlohmann::json;
@@ -62,32 +64,69 @@ void Scene::loadFromJSON(const std::string& jsonName)
         MatNameToID[name] = materials.size();
         materials.emplace_back(newMaterial);
     }
+    // --- OBJECTS PARSING ---
     const auto& objectsData = data["Objects"];
+
+    // compute JSON parent directory once so relative FILE paths resolve to the JSON's folder
+    std::filesystem::path jsonParent = std::filesystem::path(jsonName).parent_path();
+
     for (const auto& p : objectsData)
     {
         const auto& type = p["TYPE"];
+
         Geom newGeom;
-        if (type == "cube")
-        {
-            newGeom.type = CUBE;
-        }
-        else
-        {
-            newGeom.type = SPHERE;
-        }
-        newGeom.materialid = MatNameToID[p["MATERIAL"]];
+
+        // Parse transformations shared by all object types
         const auto& trans = p["TRANS"];
         const auto& rotat = p["ROTAT"];
         const auto& scale = p["SCALE"];
         newGeom.translation = glm::vec3(trans[0], trans[1], trans[2]);
         newGeom.rotation = glm::vec3(rotat[0], rotat[1], rotat[2]);
         newGeom.scale = glm::vec3(scale[0], scale[1], scale[2]);
+
         newGeom.transform = utilityCore::buildTransformationMatrix(
             newGeom.translation, newGeom.rotation, newGeom.scale);
         newGeom.inverseTransform = glm::inverse(newGeom.transform);
         newGeom.invTranspose = glm::inverseTranspose(newGeom.transform);
 
-        geoms.push_back(newGeom);
+        if (type == "mesh" || type == "gltf")
+        {
+            std::string filename = p["FILE"];
+            // If the FILE path is relative, resolve it relative to the JSON file location.
+            std::filesystem::path filePath(filename);
+            if (filePath.is_relative())
+            {
+                filename = (jsonParent / filePath).string();
+            }
+
+            newGeom.type = MESH;
+            newGeom.materialid = MatNameToID.count(p["MATERIAL"]) ? MatNameToID[p["MATERIAL"]] : 0;
+
+            // loadGLTF updates newGeom.triangleStartIdx, triangleCount, and boundingBox
+            if (loadGLTF(filename, this->triangles, newGeom))
+            {
+                this->meshAABB.grow(newGeom.boundingBox);
+                this->geoms.push_back(newGeom);
+                std::cout << "Loaded triangles count: " << newGeom.triangleCount << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to load glTF file: " << filename << std::endl;
+            }
+        }
+        else
+        {
+            if (type == "cube")
+            {
+                newGeom.type = CUBE;
+            }
+            else
+            {
+                newGeom.type = SPHERE;
+            }
+            newGeom.materialid = MatNameToID[p["MATERIAL"]];
+            this->geoms.push_back(newGeom);
+        }
     }
     const auto& cameraData = data["Camera"];
     Camera& camera = state.camera;

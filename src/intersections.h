@@ -5,6 +5,70 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/intersect.hpp>
 
+/**
+ * The slab method checks if a ray intersects an Axis-Aligned Bounding Box in 3D space.
+ */
+__host__ __device__ inline bool intersectAABB(
+    const Ray& r,
+    const glm::vec3& boxMin,
+    const glm::vec3& boxMax,
+    float& tmin_out)
+{
+    glm::vec3 invDir = 1.0f / r.direction;
+    glm::vec3 t0 = (boxMin - r.origin) * invDir;
+    glm::vec3 t1 = (boxMax - r.origin) * invDir;
+
+    glm::vec3 tnear = glm::min(t0, t1);
+    glm::vec3 tfar = glm::max(t0, t1);
+
+    float tmin = glm::max(glm::max(tnear.x, tnear.y), tnear.z);
+    float tmax = glm::min(glm::min(tfar.x, tfar.y), tfar.z);
+
+    tmin_out = tmin;
+    return tmax >= glm::max(0.0f, tmin);
+}
+
+/**
+ * Custom Möller–Trumbore ray-triangle intersection optimized for CUDA device execution.
+ */
+__host__ __device__ inline bool intersectTriangle(
+    const Ray& r,
+    const Triangle& tri,
+    float& t,
+    glm::vec3& normal,
+    glm::vec2& uv)
+{
+    const float EPSILON = 1e-8f;
+    glm::vec3 e1 = tri.p1 - tri.p0;
+    glm::vec3 e2 = tri.p2 - tri.p0;
+
+    glm::vec3 pvec = glm::cross(r.direction, e2);
+    float det = glm::dot(e1, pvec);
+
+    // If determinant is near zero, ray lies in plane of triangle
+    if (fabsf(det) < EPSILON) return false;
+
+    float invDet = 1.0f / det;
+    glm::vec3 tvec = r.origin - tri.p0;
+    float u = glm::dot(tvec, pvec) * invDet;
+    if (u < 0.0f || u > 1.0f) return false;
+
+    glm::vec3 qvec = glm::cross(tvec, e1);
+    float v = glm::dot(r.direction, qvec) * invDet;
+    if (v < 0.0f || (u + v) > 1.0f) return false;
+
+    float t_temp = glm::dot(e2, qvec) * invDet;
+    if (t_temp <= 0.001f) return false;
+
+    t = t_temp;
+    float w = 1.0f - u - v;
+
+    // Interpolate surface normal and UV coordinates across barycentric coordinates
+    normal = glm::normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
+    uv = w * tri.uv0 + u * tri.uv1 + v * tri.uv2;
+
+    return true;
+}
 
 /**
  * Handy-dandy hash function that provides seeds for random number generation.

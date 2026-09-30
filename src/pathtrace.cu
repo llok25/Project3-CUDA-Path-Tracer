@@ -17,12 +17,12 @@
 #include "intersections.h"
 #include "interactions.h"
 
-#define ERRORCHECK 1
+#define ERRORCHECK 0
 
 // Feature Toggles
 #define STOCHASTIC_AA 1
 
-#define SORT_BY_MATERIAL 1 // Toggle to 1 to enable sorting
+#define SORT_BY_MATERIAL 0 // Toggle to 1 to enable sorting
 
 // Sorting predicate
 struct CompareByMaterial {
@@ -103,6 +103,7 @@ static PathSegment* dev_paths = NULL;
 static ShadeableIntersection* dev_intersections = NULL;
 // TODO: static variables for device memory, any extra info you need, etc
 // ...
+static Triangle* dev_triangles = NULL;
 
 void InitDataContainer(GuiDataContainer* imGuiData)
 {
@@ -131,6 +132,10 @@ void pathtraceInit(Scene* scene)
     cudaMemset(dev_intersections, 0, pixelcount * sizeof(ShadeableIntersection));
 
     // TODO: initialize any extra device memeory you need
+    if (!scene->triangles.empty()) {
+        cudaMalloc(&dev_triangles, scene->triangles.size() * sizeof(Triangle));
+        cudaMemcpy(dev_triangles, scene->triangles.data(), scene->triangles.size() * sizeof(Triangle), cudaMemcpyHostToDevice);
+    }
 
     checkCUDAError("pathtraceInit");
 }
@@ -143,6 +148,7 @@ void pathtraceFree()
     cudaFree(dev_materials);
     cudaFree(dev_intersections);
     // TODO: clean up any extra device memory you created
+    cudaFree(dev_triangles);
 
     checkCUDAError("pathtraceFree");
 }
@@ -205,6 +211,7 @@ __global__ void computeIntersections(
     PathSegment* pathSegments,
     Geom* geoms,
     int geoms_size,
+    Triangle* triangles,
     ShadeableIntersection* intersections)
 {
     int path_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -238,6 +245,58 @@ __global__ void computeIntersections(
                 t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside);
             }
             // TODO: add more intersection tests here... triangle? metaball? CSG?
+            else if (geom.type == MESH)
+            {
+                // 1. Transform ray from world space into mesh object space
+                Ray r_obj;
+                r_obj.origin = multiplyMV(geom.inverseTransform, glm::vec4(pathSegment.ray.origin, 1.0f));
+                r_obj.direction = glm::normalize(multiplyMV(geom.inverseTransform, glm::vec4(pathSegment.ray.direction, 0.0f)));
+
+                // 2. Fast AABB bounding box cull
+                float t_aabb;
+                if (intersectAABB(r_obj, geom.boundingBox.minBound, geom.boundingBox.maxBound, t_aabb))
+                {
+                    float t_mesh_min = FLT_MAX;
+                    glm::vec3 best_normal_obj(0.0f);
+                    glm::vec2 best_uv(0.0f);
+                    bool hit_mesh = false;
+
+                    // 3. Iterate through triangles assigned to this mesh
+                    for (int j = geom.triangleStartIdx; j < geom.triangleStartIdx + geom.triangleCount; j++)
+                    {
+                        float t_tri;
+                        glm::vec3 tri_normal;
+                        glm::vec2 tri_uv;
+
+                        if (intersectTriangle(r_obj, triangles[j], t_tri, tri_normal, tri_uv))
+                        {
+                            if (t_tri > 0.001f && t_tri < t_mesh_min)
+                            {
+                                t_mesh_min = t_tri;
+                                best_normal_obj = tri_normal;
+                                best_uv = tri_uv;
+                                hit_mesh = true;
+                            }
+                        }
+                    }
+
+                    // 4. If a triangle was hit, convert intersection point and normal back to world space
+                    if (hit_mesh)
+                    {
+                        glm::vec3 obj_intersect = r_obj.origin + t_mesh_min * r_obj.direction;
+                        glm::vec3 world_intersect = multiplyMV(geom.transform, glm::vec4(obj_intersect, 1.0f));
+                        float t_world = glm::distance(pathSegment.ray.origin, world_intersect);
+
+                        if (t_world > 0.0f && t_world < t_min)
+                        {
+                            t_min = t_world;
+                            hit_geom_index = i;
+                            intersect_point = world_intersect;
+                            normal = glm::normalize(multiplyMV(geom.invTranspose, glm::vec4(best_normal_obj, 0.0f)));
+                        }
+                    }
+                }
+            }
 
             // Compute the minimum t from the intersection tests to determine what
             // scene geometry object was hit first.
@@ -405,6 +464,7 @@ void pathtrace(uchar4* pbo, int frame, int iter)
             dev_paths,
             dev_geoms,
             hst_scene->geoms.size(),
+            dev_triangles,
             dev_intersections
             );
         checkCUDAError("trace one bounce");
@@ -452,8 +512,7 @@ void pathtrace(uchar4* pbo, int frame, int iter)
     sendImageToPBO << <blocksPerGrid2d, blockSize2d >> > (pbo, cam.resolution, iter, dev_image);
 
     // Retrieve image from GPU for host saving
-    cudaMemcpy(hst_scene->state.image.data(), dev_image,
-        pixelcount * sizeof(glm::vec3), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hst_scene->state.image.data(), dev_image, pixelcount * sizeof(glm::vec3), cudaMemcpyDeviceToHost);
 
     checkCUDAError("pathtrace");
 }
