@@ -4,69 +4,72 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/intersect.hpp>
+#include <cfloat>
 
-/**
- * The slab method checks if a ray intersects an Axis-Aligned Bounding Box in 3D space.
- */
 __host__ __device__ inline bool intersectAABB(
-    const Ray& r,
-    const glm::vec3& boxMin,
-    const glm::vec3& boxMax,
-    float& tmin_out)
+    const Ray &ray,
+    const glm::vec3 &boxMin,
+    const glm::vec3 &boxMax,
+    float &tminOut)
 {
-    glm::vec3 invDir = 1.0f / r.direction;
-    glm::vec3 t0 = (boxMin - r.origin) * invDir;
-    glm::vec3 t1 = (boxMax - r.origin) * invDir;
+    float tnear = -FLT_MAX;
+    float tfar = FLT_MAX;
+    for (int axis = 0; axis < 3; ++axis)
+    {
+        const float origin = ray.origin[axis];
+        const float direction = ray.direction[axis];
+        if (fabsf(direction) < 1e-8f)
+        {
+            if (origin < boxMin[axis] || origin > boxMax[axis])
+                return false;
+            continue;
+        }
 
-    glm::vec3 tnear = glm::min(t0, t1);
-    glm::vec3 tfar = glm::max(t0, t1);
+        const float t0 = (boxMin[axis] - origin) / direction;
+        const float t1 = (boxMax[axis] - origin) / direction;
+        tnear = glm::max(tnear, glm::min(t0, t1));
+        tfar = glm::min(tfar, glm::max(t0, t1));
+        if (tnear > tfar)
+            return false;
+    }
 
-    float tmin = glm::max(glm::max(tnear.x, tnear.y), tnear.z);
-    float tmax = glm::min(glm::min(tfar.x, tfar.y), tfar.z);
-
-    tmin_out = tmin;
-    return tmax >= glm::max(0.0f, tmin);
+    tminOut = tnear;
+    return tfar >= glm::max(0.0f, tnear);
 }
 
-/**
- * Custom Möller–Trumbore ray-triangle intersection optimized for CUDA device execution.
- */
 __host__ __device__ inline bool intersectTriangle(
-    const Ray& r,
-    const Triangle& tri,
-    float& t,
-    glm::vec3& normal,
-    glm::vec2& uv)
+    const Ray &ray,
+    const Triangle &triangle,
+    float &t,
+    glm::vec3 &normal,
+    glm::vec2 &uv)
 {
-    const float EPSILON = 1e-8f;
-    glm::vec3 e1 = tri.p1 - tri.p0;
-    glm::vec3 e2 = tri.p2 - tri.p0;
+    const glm::vec3 edge1 = triangle.p1 - triangle.p0;
+    const glm::vec3 edge2 = triangle.p2 - triangle.p0;
+    const glm::vec3 pvec = glm::cross(ray.direction, edge2);
+    const float determinant = glm::dot(edge1, pvec);
+    if (fabsf(determinant) < 1e-8f)
+        return false;
 
-    glm::vec3 pvec = glm::cross(r.direction, e2);
-    float det = glm::dot(e1, pvec);
+    const float inverseDeterminant = 1.0f / determinant;
+    const glm::vec3 tvec = ray.origin - triangle.p0;
+    const float u = glm::dot(tvec, pvec) * inverseDeterminant;
+    if (u < 0.0f || u > 1.0f)
+        return false;
 
-    // If determinant is near zero, ray lies in plane of triangle
-    if (fabsf(det) < EPSILON) return false;
+    const glm::vec3 qvec = glm::cross(tvec, edge1);
+    const float v = glm::dot(ray.direction, qvec) * inverseDeterminant;
+    if (v < 0.0f || u + v > 1.0f)
+        return false;
 
-    float invDet = 1.0f / det;
-    glm::vec3 tvec = r.origin - tri.p0;
-    float u = glm::dot(tvec, pvec) * invDet;
-    if (u < 0.0f || u > 1.0f) return false;
+    const float hitT = glm::dot(edge2, qvec) * inverseDeterminant;
+    if (hitT <= 0.001f)
+        return false;
 
-    glm::vec3 qvec = glm::cross(tvec, e1);
-    float v = glm::dot(r.direction, qvec) * invDet;
-    if (v < 0.0f || (u + v) > 1.0f) return false;
-
-    float t_temp = glm::dot(e2, qvec) * invDet;
-    if (t_temp <= 0.001f) return false;
-
-    t = t_temp;
-    float w = 1.0f - u - v;
-
-    // Interpolate surface normal and UV coordinates across barycentric coordinates
-    normal = glm::normalize(w * tri.n0 + u * tri.n1 + v * tri.n2);
-    uv = w * tri.uv0 + u * tri.uv1 + v * tri.uv2;
-
+    const float w = 1.0f - u - v;
+    t = hitT;
+    normal = glm::normalize(w * triangle.n0 + u * triangle.n1 + v * triangle.n2);
+    uv = w * triangle.uv0 + u * triangle.uv1 + v * triangle.uv2;
     return true;
 }
 
@@ -115,9 +118,9 @@ __host__ __device__ inline glm::vec3 multiplyMV(glm::mat4 m, glm::vec4 v)
 __host__ __device__ float boxIntersectionTest(
     Geom box,
     Ray r,
-    glm::vec3& intersectionPoint,
-    glm::vec3& normal,
-    bool& outside);
+    glm::vec3 &intersectionPoint,
+    glm::vec3 &normal,
+    bool &outside);
 
 // CHECKITOUT
 /**
@@ -132,6 +135,11 @@ __host__ __device__ float boxIntersectionTest(
 __host__ __device__ float sphereIntersectionTest(
     Geom sphere,
     Ray r,
-    glm::vec3& intersectionPoint,
-    glm::vec3& normal,
-    bool& outside);
+    glm::vec3 &intersectionPoint,
+    glm::vec3 &normal,
+    bool &outside);
+
+
+__host__ __device__ float meshIntersectionTest(
+    Geom mesh, Ray r, const Triangle* tris, const BVHNode* nodes, int accelMode,
+    glm::vec3& intersectionPoint, glm::vec3& normal, bool& outside);

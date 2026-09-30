@@ -16,6 +16,13 @@ enum GeomType
     MESH
 };
 
+enum MeshAccel 
+{ 
+    ACCEL_NONE = 0, 
+    ACCEL_AABB = 1, 
+    ACCEL_BVH = 2 
+};
+
 struct Ray
 {
     glm::vec3 origin;
@@ -45,6 +52,12 @@ struct AABB {
     }
 };
 
+struct BVHNode {
+    AABB bounds;
+    int left = -1, right = -1;   // child node indices (internal nodes)
+    int firstTri = 0, triCount = 0; // triCount > 0 => leaf
+};
+
 struct Triangle {
     glm::vec3 p0, p1, p2;
     glm::vec3 n0, n1, n2;
@@ -68,6 +81,7 @@ struct Geom
     int triangleStartIdx = -1;
     int triangleCount = 0;
     AABB boundingBox; // Object-space AABB
+    int bvhRoot = -1;
 };
 
 struct Material

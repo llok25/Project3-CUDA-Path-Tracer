@@ -17,4 +17,6 @@ public:
 
     std::vector<Triangle> triangles;
     AABB meshAABB;
+
+    std::vector<BVHNode> bvhNodes;
 };

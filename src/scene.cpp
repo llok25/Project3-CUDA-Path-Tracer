@@ -12,6 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <algorithm>
 
 using namespace std;
 using json = nlohmann::json;
@@ -31,6 +32,38 @@ Scene::Scene(string filename)
         cout << "Couldn't read from " << filename << endl;
         exit(-1);
     }
+}
+
+static int buildBVH(std::vector<Triangle>& tris, std::vector<BVHNode>& nodes,
+    int start, int count)
+{
+    int idx = (int)nodes.size();
+    nodes.emplace_back();
+    AABB b, cb;
+    for (int i = start; i < start + count; ++i) {
+        b.grow(tris[i].aabb);
+        cb.grow((tris[i].aabb.minBound + tris[i].aabb.maxBound) * 0.5f);
+    }
+    nodes[idx].bounds = b;
+
+    if (count <= 4) {
+        nodes[idx].firstTri = start;
+        nodes[idx].triCount = count;
+        return idx;
+    }
+    glm::vec3 ext = cb.maxBound - cb.minBound;
+    int axis = (ext.x > ext.y && ext.x > ext.z) ? 0 : (ext.y > ext.z ? 1 : 2);
+    int mid = start + count / 2;
+    std::nth_element(tris.begin() + start, tris.begin() + mid, tris.begin() + start + count,
+        [axis](const Triangle& a, const Triangle& c) {
+            return (a.aabb.minBound[axis] + a.aabb.maxBound[axis]) <
+                (c.aabb.minBound[axis] + c.aabb.maxBound[axis]);
+        });
+    int l = buildBVH(tris, nodes, start, mid - start);
+    int r = buildBVH(tris, nodes, mid, start + count - mid);
+    nodes[idx].left = l;   // assign after recursion: emplace_back may reallocate
+    nodes[idx].right = r;
+    return idx;
 }
 
 void Scene::loadFromJSON(const std::string& jsonName)
@@ -108,6 +141,8 @@ void Scene::loadFromJSON(const std::string& jsonName)
                 this->meshAABB.grow(newGeom.boundingBox);
                 this->geoms.push_back(newGeom);
                 std::cout << "Loaded triangles count: " << newGeom.triangleCount << std::endl;
+                newGeom.bvhRoot = buildBVH(this->triangles, this->bvhNodes, newGeom.triangleStartIdx, newGeom.triangleCount); 
+                std::cout << "BVH nodes: " << this->bvhNodes.size() << ", root: " << newGeom.bvhRoot << std::endl;
             }
             else
             {
