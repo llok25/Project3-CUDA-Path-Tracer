@@ -27,6 +27,30 @@
             "TYPE":"Specular",
             "RGB":[0.98, 0.98, 0.98],
             "ROUGHNESS":0.0
+        },
+        "glass":  
+        { 
+            "TYPE": "Glass",    
+            "RGB": [1.0, 1.0, 1.0], 
+            "IOR": 1.5 
+        },
+        "water":  
+        { 
+            "TYPE": "Glass",    
+            "RGB": [0.9, 0.95, 1.0], 
+            "IOR": 1.33 
+        },
+        "mirror": 
+        { 
+            "TYPE": "Specular", 
+            "RGB": [0.98, 0.98, 0.98] 
+        },
+        "brushed":
+        { 
+            "TYPE": "Specular", 
+            "RGB": [0.9, 0.8, 0.5], 
+            "EXPONENT": 200, 
+            "REFLECTIVITY": 0.9 
         }
     },
     "Camera":
@@ -85,12 +109,11 @@
             "SCALE":[0.01,10.0,10.0]
         },
         {
-            "TYPE": "gltf",
-            "FILE": "scene.gltf",
-            "MATERIAL": "diffuse_white",
-            "TRANS": [0.0, 3.0, 0.0],
-            "ROTAT": [-90.0, 0.0, 0.0],
-            "SCALE": [10.0, 10.0, 10.0]
+            "TYPE":"sphere",
+            "MATERIAL":"glass",
+            "TRANS":[-1.0,4.0,-1.0],
+            "ROTAT":[0.0,0.0,0.0],
+            "SCALE":[3.0,3.0,3.0]
         }
     ]
 }

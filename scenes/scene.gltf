@@ -3,24 +3,24 @@
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 54,
+      "count": 27657,
       "max": [
-        1.0,
-        1.0,
-        1.0
+        0.16897299885749817,
+        0.16950100660324097,
+        0.2937000095844269
       ],
       "min": [
-        -1.0,
-        -1.0,
-        -1.0
+        -0.1700270026922226,
+        -0.1694989949464798,
+        0.0
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 648,
+      "byteOffset": 331884,
       "componentType": 5126,
-      "count": 54,
+      "count": 27657,
       "max": [
         1.0,
         1.0,
@@ -36,30 +36,30 @@
     {
       "bufferView": 1,
       "componentType": 5126,
-      "count": 54,
+      "count": 27657,
       "max": [
-        0.9138901829719543,
-        0.9484003186225891
+        0.9999989867210388,
+        0.6896650195121765
       ],
       "min": [
-        0.04355546832084656,
-        0.012766718864440918
+        0.0,
+        0.0
       ],
       "type": "VEC2"
     },
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 96,
+      "count": 137052,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "Potato Head (https://sketchfab.com/potato_head)",
-      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/old-crt-tv-psxps1-style-low-poly-159d1c197c014bb183ffa66bda09a992",
-      "title": "Old CRT TV - PSX/PS1 Style Low Poly"
+      "author": "mariocanfly (https://sketchfab.com/mariocanfly)",
+      "license": "SKETCHFAB Standard (https://sketchfab.com/licenses)",
+      "source": "https://sketchfab.com/3d-models/wastebasket-a29b85c6a0fc4d5ba8bdc0f39fdc6384",
+      "title": "废纸篓 Wastebasket"
     },
     "generator": "Sketchfab-0.13.0",
     "version": "2.0"
@@ -67,22 +67,22 @@
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 384,
+      "byteLength": 548208,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 432,
-      "byteOffset": 384,
+      "byteLength": 221256,
+      "byteOffset": 548208,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 1296,
-      "byteOffset": 816,
+      "byteLength": 663768,
+      "byteOffset": 769464,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -90,30 +90,30 @@
   ],
   "buffers": [
     {
-      "byteLength": 2112,
+      "byteLength": 1433232,
       "uri": "scene.bin"
     }
   ],
   "extensionsUsed": [
-    "KHR_materials_unlit"
-  ],
-  "images": [
-    {
-      "uri": "textures/material_baseColor.png"
-    }
+    "KHR_materials_specular"
   ],
   "materials": [
     {
       "doubleSided": true,
       "extensions": {
-        "KHR_materials_unlit": {}
+        "KHR_materials_specular": {
+          "specularColorFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "specularFactor": 0.8392323298883417
+        }
       },
-      "name": "material",
+      "name": "material_0",
       "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 0
-        },
-        "metallicFactor": 0.0
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.5043137151117325
       }
     }
   ],
@@ -163,67 +163,11 @@
       "children": [
         2
       ],
-      "name": "root"
-    },
-    {
-      "children": [
-        3
-      ],
-      "matrix": [
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        2.220446049250313e-16,
-        1.0,
-        0.0,
-        0.0,
-        -1.0,
-        2.220446049250313e-16,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "GLTF_SceneRootNode"
-    },
-    {
-      "children": [
-        4
-      ],
-      "matrix": [
-        0.1850000023841858,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.17000000178813934,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.20999999344348907,
-        0.0,
-        0.0,
-        0.3014666736125946,
-        0.0,
-        1.0
-      ],
-      "name": "Cube_0"
+      "name": "���������_pure.obj.cleaner.materialmerger.gles"
     },
     {
       "mesh": 0,
-      "name": "Object_4"
-    }
-  ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987,
-      "wrapS": 10497,
-      "wrapT": 10497
+      "name": "Object_2"
     }
   ],
   "scene": 0,
@@ -233,12 +177,6 @@
       "nodes": [
         0
       ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
     }
   ]
 }
