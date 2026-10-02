@@ -138,10 +138,10 @@ void Scene::loadFromJSON(const std::string& jsonName)
             // loadGLTF updates newGeom.triangleStartIdx, triangleCount, and boundingBox
             if (loadGLTF(filename, this->triangles, newGeom))
             {
+                newGeom.bvhRoot = buildBVH(this->triangles, this->bvhNodes, newGeom.triangleStartIdx, newGeom.triangleCount);
                 this->meshAABB.grow(newGeom.boundingBox);
                 this->geoms.push_back(newGeom);
                 std::cout << "Loaded triangles count: " << newGeom.triangleCount << std::endl;
-                newGeom.bvhRoot = buildBVH(this->triangles, this->bvhNodes, newGeom.triangleStartIdx, newGeom.triangleCount); 
                 std::cout << "BVH nodes: " << this->bvhNodes.size() << ", root: " << newGeom.bvhRoot << std::endl;
             }
             else
