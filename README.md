@@ -25,7 +25,7 @@ A GPU path tracer written in CUDA that renders arbitrary glTF models inside a fu
 | ![](img/glass1.png) | ![](img/refraction.png) |
 | Stochastic antialiasing (off) | Stochastic antialiasing (on) |
 |---|---|
-| ![](img/SAA_off_corp.png) | ![](img/SAA_on_corp.png) |
+| ![](img/SAA_off_crop.png) | ![](img/SAA_on_crop.png) |
 
 
 ## Loading glTF models
