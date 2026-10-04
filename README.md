@@ -61,25 +61,42 @@ Objects are placed from JSON; each mesh entry picks a model file, a material and
 ```
 
 ## Performance analysis
-
-<!-- TODO: fill every table below with measured numbers. Do not leave estimates. -->
-
-### AABB culling
-
-Intersection kernel time, averaged over 1000 iterations at 800×800, depth 8:
-
-| Scene | Culling off (ms) | Culling on (ms) | Speedup |
-|---|---|---|---|
-| Cornell box only | 5.34 | 5.25 | 1.017 |
-| Desk scene (~78k triangles) | 16.90 | 16.47 | 1.026 |
-
-Culling only helps rays that miss a mesh's bounding box. Rays that do hit a box still test every triangle in that mesh, so the basket and the lamp (45k and 31k triangles) dominate the remaining cost.
-
+ 
+All numbers below come from an Nsight Systems capture of the desk scene (about 78,000 triangles) over 155 iterations at 800×800, trace depth 8, on an RTX 5070 Laptop GPU in a Release build, with BVH, material sorting and stream compaction enabled. Times are GPU kernel durations per iteration, so they exclude CPU work and display overhead.
+ 
+### Where the time goes
+ 
+![Iteration breakdown](img/iteration_breakdown.png)
+ 
+| Stage | ms / iteration | Share |
+|---|---|---|
+| Intersect (BVH traversal) | 17.3 | 39.4% |
+| Material sort | 21.9 | 49.8% |
+| Stream compaction | 3.6 | 8.3% |
+| Shade | 0.87 | 2.0% |
+| Generate rays + display | 0.25 | 0.6% |
+| **Total** | **43.9** | |
+ 
+### Stream compaction
+ 
+An iteration starts with 640,000 paths. Rays that leave the room terminate, and compaction removes them, so each later bounce launches fewer threads. Intersection time follows the live ray count closely:
+ 
+![Rays per bounce](img/rays_per_bounce.png)
+ 
+| Bounce | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|---|
+| Live rays (thousands) | 640 | 632 | 496 | 431 | 375 | 331 | 294 | 261 |
+| Intersect (ms) | 2.68 | 2.95 | 2.49 | 2.26 | 2.03 | 1.80 | 1.62 | 1.45 |
+ 
+By bounce 7, 41% of the paths are still alive, and the intersection kernel runs in about half the time of bounce 1. Compaction itself costs 3.6 ms per iteration (8% of GPU time) and is cheapest exactly when it removes the most rays.
+ 
 ### Per-kernel breakdown
 
 Use stacked bars: one bar per configuration, one segment per kernel (generate rays, intersect, shade, compaction/sort, final gather), with timings from Nsight Systems or Nsight Compute.
-
-![Kernel breakdown](img/kernel_breakdown.png)
+ 
+![Kernel time per bounce](img/kernel_breakdown.png)
+ 
+Sorting is the largest single cost in this capture, at 21.9 ms per iteration. That is more than the intersection kernel and about 25× the shading kernel it exists to speed up (0.87 ms). Even if sorting made shading free, it could not pay for itself on the shade kernel alone, so any benefit would have to come from better ray coherence in the next bounce's intersection.
 
 ## Build and run
 
