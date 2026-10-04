@@ -98,6 +98,26 @@ Use stacked bars: one bar per configuration, one segment per kernel (generate ra
  
 Sorting is the largest single cost in this capture, at 21.9 ms per iteration. That is more than the intersection kernel and about 25× the shading kernel it exists to speed up (0.87 ms). Even if sorting made shading free, it could not pay for itself on the shade kernel alone, so any benefit would have to come from better ray coherence in the next bounce's intersection.
 
+### Mesh intersection: brute force vs AABB culling vs BVH
+ 
+Intersection kernel time per iteration (summed over all bounces), averaged over 1000 iterations at 800×800, depth 8:
+ 
+| Scene | Brute force (ms) | AABB culling (ms) | BVH (ms) |
+|---|---|---|---|
+| Cornell box + gem (30 triangles) | 5.97 | 5.31 | 5.13 |
+| Desk scene (~78k triangles) | 5428 | 1241 | 16.7 |
+ 
+| Desk scene speedups | Brute force | AABB culling |
+|---|---|---|
+| AABB culling | 4.4× | n/a |
+| BVH | **325×** | **74×** |
+ 
+![Intersection method comparison](img/intersection_methods.png)
+ 
+Brute force tests every ray against all ~78,000 triangles and takes 5.4 seconds per iteration. AABB culling rejects any ray that misses a mesh's bounding box, which removes most of the work, but a ray that does hit a box still tests every triangle in that mesh, so the basket (45k triangles) and lamp (31k) keep it at 1.2 seconds. The BVH narrows each ray to a handful of triangles, and the desk scene then costs only 3.3× as much as the near-empty Cornell box, despite having about 2,600× the triangles.
+ 
+On the small scene, the three methods are within 16% of each other, because 30 triangles are cheap however they are tested and the box and sphere primitives dominate. The benefit of acceleration shows up only as triangle count grows.
+
 ## Build and run
 
 1. Place the five models (`desk`, `lamp`, `gem`, `mirror`, `basket`, each a `.gltf` plus a `.bin`) in `scenes/`.
