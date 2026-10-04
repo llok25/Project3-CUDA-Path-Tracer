@@ -51,11 +51,6 @@
             "RGB": [0.9, 0.8, 0.5], 
             "EXPONENT": 200, 
             "REFLECTIVITY": 0.9 
-        },
-        "wood_desk":
-        {
-            "TYPE":"Diffuse",
-            "RGB":[0.55, 0.35, 0.20]
         }
     },
     "Camera":
@@ -64,9 +59,9 @@
         "FOVY":45.0,
         "ITERATIONS":5000,
         "DEPTH":8,
-        "FILE":"desk_room",
-        "EYE":[0.0,5.0,12.0],
-        "LOOKAT":[0.0,3.0,0.0],
+        "FILE":"cornell",
+        "EYE":[0.0,5.0,10.5],
+        "LOOKAT":[0.0,5.0,0.0],
         "UP":[0.0,1.0,0.0]
     },
     "Objects":
@@ -74,9 +69,9 @@
         {
             "TYPE":"cube",
             "MATERIAL":"light",
-            "TRANS":[0.0,9.8,0.0],
+            "TRANS":[0.0,10.0,0.0],
             "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[3.0,0.2,3.0]
+            "SCALE":[3.0,0.3,3.0]
         },
         {
             "TYPE":"cube",
@@ -114,60 +109,11 @@
             "SCALE":[0.01,10.0,10.0]
         },
         {
-            "TYPE":"cube",
-            "MATERIAL":"wood_desk",
-            "TRANS":[0.0,2.5,0.0],
-            "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[4.0,0.1,2.5]
-        },
-        {
-            "TYPE":"cube",
-            "MATERIAL":"wood_desk",
-            "TRANS":[-3.6,1.25,-2.1],
-            "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[0.2,1.25,0.2]
-        },
-        {
-            "TYPE":"cube",
-            "MATERIAL":"wood_desk",
-            "TRANS":[3.6,1.25,-2.1],
-            "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[0.2,1.25,0.2]
-        },
-        {
-            "TYPE":"cube",
-            "MATERIAL":"wood_desk",
-            "TRANS":[-3.6,1.25,2.1],
-            "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[0.2,1.25,0.2]
-        },
-        {
-            "TYPE":"cube",
-            "MATERIAL":"wood_desk",
-            "TRANS":[3.6,1.25,2.1],
-            "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[0.2,1.25,2.1]
-        },
-        {
-            "TYPE":"cube",
-            "MATERIAL":"light",
-            "TRANS":[2.0,5.0,0.0],
-            "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[0.3,1.0,0.3]
-        },
-        {
             "TYPE":"sphere",
             "MATERIAL":"glass",
-            "TRANS":[-1.0,3.0,0.0],
+            "TRANS":[-1.0,4.0,-1.0],
             "ROTAT":[0.0,0.0,0.0],
-            "SCALE":[0.8,0.8,0.8]
-        },
-        {
-            "TYPE":"cube",
-            "MATERIAL":"mirror",
-            "TRANS":[4.9,5.0,0.0],
-            "ROTAT":[0.0,0.0,90.0],
-            "SCALE":[0.05,2.5,2.0]
+            "SCALE":[3.0,3.0,3.0]
         }
     ]
 }
