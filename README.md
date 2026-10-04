@@ -6,7 +6,7 @@ CUDA Path Tracer
 * Sau Lok Li
 * Tested on: Windows, AMD Ryzen 9 270 w/ Radeon 780M Graphics, NVIDIA GeForce RTX 5070 Laptop GPU (8151 MiB), driver 596.13
 
-![Cover render](img/cover.png)
+![Cover render](img/cover1.png)
 
 A GPU path tracer written in CUDA that renders arbitrary glTF models inside a fully path-traced environment. The cover scene is a desk lit by a ceiling panel and a glowing lamp bulb, with a red gem, a gold and a chrome sphere on the desktop, a full-length arched mirror, and a wire waste basket.
 
@@ -20,10 +20,13 @@ A GPU path tracer written in CUDA that renders arbitrary glTF models inside a fu
 
 ## Gallery
 
-| Mirror reflection | Desk detail |
+| Glass | Refraction |
 |---|---|
-| ![](img/mirror.png) | ![](img/desk.png) |
-<!-- TODO: add 2-4 of your best renders with one-line captions -->
+| ![](img/glass1.png) | ![](img/refraction.png) |
+| Stochastic antialiasing (off) | Stochastic antialiasing (on) |
+|---|---|
+| ![](img/SAA_off.png) | ![](img/SAA_on.png) |
+
 
 ## Loading glTF models
 
