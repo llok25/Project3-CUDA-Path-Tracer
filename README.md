@@ -16,7 +16,9 @@ A GPU path tracer written in CUDA that renders arbitrary glTF models inside a fu
 * glTF mesh loading with [tinygltf v3](https://github.com/syoyo/tinygltf), with scene-level placement (translate / rotate / scale) driven from JSON
 * Per-mesh and per-triangle AABB culling, togglable at runtime from the ImGui panel so the speedup can be measured live
 * ImGui analytics panel: trace depth, intersection kernel time, frame time and FPS
-*  material sorting, BVH, refraction
+* Refraction with a per-material index of refraction
+* BVH acceleration for triangle meshes 
+* Material sorting to group rays by material before shading, reducing warp divergence in the shading kernel
 
 ## Gallery
 
@@ -24,7 +26,6 @@ A GPU path tracer written in CUDA that renders arbitrary glTF models inside a fu
 |---|---|
 | ![](img/glass1.png) | ![](img/refraction.png) |
 | Stochastic antialiasing (off) | Stochastic antialiasing (on) |
-|---|---|
 | ![](img/SAA_off_crop.png) | ![](img/SAA_on_crop.png) |
 
 
@@ -65,14 +66,14 @@ Objects are placed from JSON; each mesh entry picks a model file, a material and
 
 ### AABB culling
 
-Intersection kernel time, averaged over TODO iterations at 800×800, depth 8:
+Intersection kernel time, averaged over 1000 iterations at 800×800, depth 8:
 
 | Scene | Culling off (ms) | Culling on (ms) | Speedup |
 |---|---|---|---|
-| Cornell box + gem only | TODO | TODO | TODO |
-| Desk scene (~78k triangles) | TODO | TODO | TODO |
+| Cornell box only | 5.34 | 5.25 | 1.017 |
+| Desk scene (~78k triangles) | 16.90 | 16.47 | 1.026 |
 
-Culling only helps rays that miss a mesh's bounding box. Rays that do hit a box still test every triangle in that mesh, so the basket and the lamp (45k and 31k triangles) dominate the remaining cost. TODO: explain what you observe, and whether a BVH is the next step.
+Culling only helps rays that miss a mesh's bounding box. Rays that do hit a box still test every triangle in that mesh, so the basket and the lamp (45k and 31k triangles) dominate the remaining cost.
 
 ### Per-kernel breakdown
 
@@ -85,6 +86,15 @@ Use stacked bars: one bar per configuration, one segment per kernel (generate ra
 1. Place the five models (`desk`, `lamp`, `gem`, `mirror`, `basket`, each a `.gltf` plus a `.bin`) in `scenes/`.
 2. Configure and build with CMake (Visual Studio 2022 or later works well on Windows).
 3. Run with the scene path as the first argument: `cis565_path_tracer scenes/custom_scene.json`
+
+### Controls
+
+* Esc to save an image and exit.
+* S to save an image. Watch the console for the output filename.
+* Space to re-center the camera at the original scene lookAt point.
+* Left mouse button to rotate the camera.
+* Right mouse button on the vertical axis to zoom in/out.
+* Middle mouse button to move the LOOKAT point in the scene's X/Z plane.
 
 ## Credits and references
 
